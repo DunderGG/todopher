@@ -57,7 +57,7 @@ After running the audit, ToDopher generates a `report.html` file in the project 
 3. **No Server Required**: The report is a portable, standalone file.
 
 ## 🛠️ Configuration
-Currently, ToDopher is configured via the `Config` struct in [ToDopher.go](ToDopher.go#L44-L48):
+Currently, ToDopher is configured via the `Config` struct in [ToDopher.go](ToDopher.go#L72-L76):
 - **Search Tags**: `TODO`, `FIXME`, `HACK`, `BUG`, `SUGGESTION`, `IDEA`, `REWORK`.
 - **Allowed Extensions**: `.h`, `.cpp`, `.cs`, `.py`, `.ini`, `.go`, `.java`, `.html`.
 
