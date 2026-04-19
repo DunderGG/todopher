@@ -1,6 +1,6 @@
 # <img width="64" height="64" alt="appicon" src="https://github.com/user-attachments/assets/0b314a1d-b14d-4a07-9c8b-af04b7eeca8c" /> **ToDopher**
 
-**ToDopher** is a lightning-fast source code auditor. It's designed to help engineering teams manage technical debt by extracting `TODO`, `FIXME`, and `BUG` comments from large codebases (like Unreal Engine projects) and presenting them in a beautiful, searchable dashboard.
+**ToDopher** is a lightning-fast source code auditor built in Go. It's designed to help engineering teams manage technical debt by extracting `TODO`, `FIXME`, and `BUG` comments from large codebases (like Unreal Engine projects) and presenting them in a beautiful, searchable dashboard.
 
 ###### ToDo + Gopher = ToDopher. Get it? It's a pun. You're welcome...
 
