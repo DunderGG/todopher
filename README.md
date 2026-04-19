@@ -61,13 +61,6 @@ Currently, ToDopher is configured via the `Config` struct in [ToDopher.go](ToDop
 - **Search Tags**: `TODO`, `FIXME`, `HACK`, `BUG`, `SUGGESTION`, `IDEA`, `REWORK`.
 - **Allowed Extensions**: `.h`, `.cpp`, `.cs`, `.py`, `.ini`, `.go`, `.java`, `.html`.
 
-## 📜 Roadmap
-- [x] **Git Blame Integration**: Automatically fetch the author and date of each TODO from Git history.
-- [x] **Context Lines**: Capture 2-3 lines of surrounding code for better auditing.
-- [X] **JSON/Markdown Export**: For integration with CI/CD pipelines.
-- [X] **Custom Config**: For more tags, extensions and ignore folders.
-- [ ] **GUI**: For easier usage.
-
 ## 🛠️ Built With
 
 - **[Go](https://go.dev/)**: The core scanning engine, leveraging Goroutines for concurrency.
