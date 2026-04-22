@@ -38,7 +38,7 @@ This document outlines planned improvements and new features for the ToDopher te
 | ✅ Done | HTML dashboard | Standalone dark-mode report with DataTables sorting and filtering. |
 | ✅ Done | JSON export | Machine-readable export via `--json` flag, suitable for downstream tooling. |
 | 🔲 Todo | Markdown export | Export findings as a structured Markdown file (`--md`) for pasting into GitHub wikis, Notion, or Confluence. |
-| 🔲 Todo | CSV export | Export findings as a `.csv` file (`--csv`) for import into spreadsheets or project management tools. |
+| ✅ Done | CSV export | Export findings as a `.csv` file (`--csv`) for import into spreadsheets or project management tools. |
 | 🔲 Todo | Severity color coding | Color-code findings in the HTML report by severity (e.g., red for `BUG`, orange for `FIXME`, blue for `TODO`). |
 | 🔲 Todo | Per-author summary | Add a summary section to the HTML report breaking down finding counts by author. |
 | 🔲 Todo | Per-file summary | Add a collapsible file tree view in the report showing the debt density per file and directory. |

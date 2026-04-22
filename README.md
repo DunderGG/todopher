@@ -41,6 +41,7 @@ Run ToDopher from the command line, providing an optional path to scan.
 
 | Flag  | Description |
 | :---:  | :--- |
+| `--csv`, `-c` | Optional path to export findings as a spreadsheet-friendly CSV file. |
 | `--exts`, `-e` | Comma-separated list of additional file extensions to scan (e.g., `.js,.ts`). |
 | `--help`, `-h` | Show help message and usage examples. |
 | `--ignore`, `-i` | Comma-separated list of additional folders to ignore (e.g., `node_modules,build`). |
@@ -48,6 +49,7 @@ Run ToDopher from the command line, providing an optional path to scan.
 | `--output`, `-o` | Custom **file path** for the generated HTML report (defaults to `report.html`). Supports absolute or relative paths. |
 | `--quiet`, `-q` | Quiet mode. Suppresses the ASCII intro, progress bar, and status messages. Useful for CI/CD. |
 | `--tags`, `-t` | Comma-separated list of additional tags to search for (e.g., `IMPORTANT,SECURITY`). |
+| `--workers`, `-w` | Number of concurrent worker goroutines (defaults to `20`). |
 
 ## 📊 The Report
 After running the audit, ToDopher generates a `report.html` file in the project folder. 

@@ -23,6 +23,7 @@ package main
 
 import (
 	"embed"
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -66,6 +67,8 @@ var (
 	CustomIgnore string
 	// JsonPath is the destination for the JSON export
 	JsonPath string
+	// CsvPath is the destination for the CSV export
+	CsvPath string
 	// WorkerCount is the number of concurrent worker goroutines
 	WorkerCount int
 )
@@ -136,6 +139,7 @@ func parseFlags() {
 		fmt.Println("Usage: ToDopher [options] [search_directory]")
 		fmt.Println("\nToDopher is a high-speed technical debt scanner that extracts TODOs from source code.")
 		fmt.Println("\nOptions:")
+		fmt.Println("  -c, --csv string     Optional path to export findings as a CSV file")
 		fmt.Println("  -e, --exts string    Comma-separated list of additional file extensions")
 		fmt.Println("  -h, --help           Show this help message")
 		fmt.Println("  -i, --ignore string  Comma-separated list of additional folders to ignore")
@@ -172,6 +176,9 @@ func parseFlags() {
 	// The -j or --json flag allows the user to specify a path for a JSON export of the findings.
 	flag.StringVar(&JsonPath, "j", "", "Optional path to export findings as a JSON file")
 	flag.StringVar(&JsonPath, "json", "", "Optional path to export findings as a JSON file")
+	// The -c or --csv flag allows the user to specify a path for a CSV export of the findings.
+	flag.StringVar(&CsvPath, "c", "", "Optional path to export findings as a CSV file")
+	flag.StringVar(&CsvPath, "csv", "", "Optional path to export findings as a CSV file")
 	// The -w or --workers flag allows the user to customize the number of concurrent scanning workers.
 	flag.IntVar(&WorkerCount, "w", 20, "Number of concurrent workers")
 	flag.IntVar(&WorkerCount, "workers", 20, "Number of concurrent workers")
@@ -270,6 +277,11 @@ func generateReports(findings []Finding, config Config) {
 		exportToJson(findings)
 	}
 
+	// Export to CSV if requested
+	if CsvPath != "" {
+		exportToCsv(findings)
+	}
+
 	if absPath, err := filepath.Abs(OutputPath); err == nil {
 		if !IsQuiet {
 			fmt.Printf("📊 Report generated successfully at:\n %s\n", absPath)
@@ -302,6 +314,54 @@ func exportToJson(findings []Finding) {
 			fmt.Printf("📄 JSON data exported to:\n %s\n", absJson)
 		} else {
 			fmt.Printf("📄 JSON data exported to:\n %s\n", JsonPath)
+		}
+	}
+}
+
+// exportToCsv serializes the findings into a comma-separated values (CSV) file.
+//
+// Parameters:
+//   - findings: A slice of Finding structs to be exported.
+func exportToCsv(findings []Finding) {
+	file, err := os.Create(CsvPath)
+	if err != nil {
+		fmt.Printf("Error creating CSV file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Writing the header row
+	header := []string{"File", "Line", "Tag", "Author", "Content", "Date", "Status"}
+	if err := writer.Write(header); err != nil {
+		fmt.Printf("Error writing CSV header: %v\n", err)
+		return
+	}
+
+	// Writing the finding rows
+	for _, finding := range findings {
+		row := []string{
+			finding.File,
+			strconv.Itoa(finding.Line),
+			finding.Tag,
+			finding.Author,
+			finding.Content,
+			finding.When,
+			finding.Status,
+		}
+		if err := writer.Write(row); err != nil {
+			fmt.Printf("Error writing CSV row: %v\n", err)
+			return
+		}
+	}
+
+	if !IsQuiet {
+		if absCsv, err := filepath.Abs(CsvPath); err == nil {
+			fmt.Printf("📊 CSV data exported to:\n %s\n", absCsv)
+		} else {
+			fmt.Printf("📊 CSV data exported to:\n %s\n", CsvPath)
 		}
 	}
 }
