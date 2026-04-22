@@ -291,6 +291,26 @@
             color: #d29922;
             margin-right: 8px;
         }
+
+        /* Config Info Tray */
+        .config-tray {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--footer-color);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+        .config-item { display: flex; flex-direction: column; gap: 4px; }
+        .config-label { font-weight: bold; text-transform: uppercase; font-size: 0.75rem; color: var(--heading-color); opacity: 0.7; }
+        .config-value { font-family: 'Consolas', monospace; color: var(--text-color); }
+        .config-tags-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        .config-tag-pill { background: var(--border-color); padding: 1px 6px; border-radius: 3px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -319,6 +339,30 @@
             <div class="stat-card stat-ancient">
                 <div class="stat-val" id="stat-ancient">0</div>
                 <div class="stat-label">Ancient (> 180d)</div>
+            </div>
+        </div>
+
+        <!-- Configuration Tray -->
+        <div class="config-tray">
+            <div class="config-item">
+                <div class="config-label">Search Tags</div>
+                <div class="config-tags-list">
+                    {{range .Config.SearchTags}}
+                    <span class="config-tag-pill">{{.}}</span>
+                    {{end}}
+                </div>
+            </div>
+            <div class="config-item">
+                <div class="config-label">Extensions</div>
+                <div class="config-value">{{range $i, $e := .Config.AllowedExtensions}}{{if $i}}, {{end}}{{$e}}{{end}}</div>
+            </div>
+            <div class="config-item">
+                <div class="config-label">Concurrency</div>
+                <div class="config-value">{{.Config.WorkerCount}} Workers</div>
+            </div>
+            <div class="config-item">
+                <div class="config-label">Ignore List</div>
+                <div class="config-value">{{range $i, $f := .Config.IgnoreFolders}}{{if $i}}, {{end}}{{$f}}{{end}}</div>
             </div>
         </div>
 

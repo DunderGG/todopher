@@ -125,7 +125,7 @@ func main() {
 		fmt.Printf("\nAudit complete! Total findings across all files: %d\n", len(findings))
 	}
 
-	generateReports(findings)
+	generateReports(findings, config)
 }
 
 // parseFlags defines and parses command-line flags for customizing the tool's behavior.
@@ -257,9 +257,10 @@ func filterOutputFiles(files []string) []string {
 //
 // Parameters:
 //   - findings: A slice of Finding structs containing the audit results.
-func generateReports(findings []Finding) {
+//   - config: The Config struct containing scan configuration.
+func generateReports(findings []Finding, config Config) {
 	// Generate static HTML report
-	err := generateHtmlReport(findings, OutputPath)
+	err := generateHtmlReport(findings, config, OutputPath)
 	if err != nil {
 		fmt.Printf("Error generating report: %v\n", err)
 	}
@@ -631,7 +632,7 @@ func fallbackBlame(filePath string, line int) (string, string) {
 //
 // Returns:
 //   - error: Any error encountered during file creation or template execution.
-func generateHtmlReport(findings []Finding, outputPath string) error {
+func generateHtmlReport(findings []Finding, config Config, outputPath string) error {
 	// Convert findings to JSON for embedding in the template
 	jsonData, err := json.Marshal(findings)
 	if err != nil {
@@ -639,10 +640,19 @@ func generateHtmlReport(findings []Finding, outputPath string) error {
 	}
 
 	// Prepare data for the template
+	// We define a new unnamed struct that contains the JSON data and the configuration, 
+	// which will be passed to the template for rendering.
+	// The Go html/template package's Execute method only accepts one data object. 
+	// Since we need to send both the list of findings (as JSON) and the scanner configuration, 
+	// we wrap them into this "container" struct so the template can access them via {{.FindingsJSON}} and {{.Config}}.
+	// The first set of brackets define the struct types, and the second set initializes an instance of that struct with the actual data.
+	// This is an alternative to defining a named struct at the package level, and it keeps the data structure specific to the template rendering logic.
 	data := struct {
 		FindingsJSON template.JS
+		Config       Config
 	}{
 		FindingsJSON: template.JS(jsonData),
+		Config:       config,
 	}
 
 	// Read and parse the template from the embedded file system
