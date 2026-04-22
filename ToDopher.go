@@ -66,6 +66,8 @@ var (
 	CustomIgnore string
 	// JsonPath is the destination for the JSON export
 	JsonPath string
+	// WorkerCount is the number of concurrent worker goroutines
+	WorkerCount int
 )
 
 // Config holds the scanner settings
@@ -73,6 +75,7 @@ type Config struct {
 	SearchTags        []string
 	IgnoreFolders     []string
 	AllowedExtensions []string
+	WorkerCount       int
 }
 
 // Finding represents a single technical debt entry found in the source code.
@@ -140,6 +143,7 @@ func parseFlags() {
 		fmt.Println("  -o, --output string  Output filename for the report (default \"report.html\")")
 		fmt.Println("  -q, --quiet          Quiet mode (suppress output)")
 		fmt.Println("  -t, --tags string    Comma-separated list of additional search tags")
+		fmt.Println("  -w, --workers int    Number of concurrent workers (default 20)")
 
 		fmt.Println("\nExamples:")
 		fmt.Println("   ToDopher .                               # Scan current directory")
@@ -147,6 +151,7 @@ func parseFlags() {
 		fmt.Println("   ToDopher -o \"report.html\" -j \"data.json\" # Custom outputs")
 		fmt.Println("   ToDopher -t \"BUG,URGENT\" -e \".js,.ts\"    # Custom tags and extensions")
 		fmt.Println("   ToDopher -i \"node_modules,dist\"          # Custom ignore folders")
+		fmt.Println("   ToDopher -w 40                           # More threads!")
 	}
 
 	// The -q or --quiet flag enables quiet mode, which suppresses non-essential output for a cleaner experience when the user just wants the report.
@@ -167,6 +172,9 @@ func parseFlags() {
 	// The -j or --json flag allows the user to specify a path for a JSON export of the findings.
 	flag.StringVar(&JsonPath, "j", "", "Optional path to export findings as a JSON file")
 	flag.StringVar(&JsonPath, "json", "", "Optional path to export findings as a JSON file")
+	// The -w or --workers flag allows the user to customize the number of concurrent scanning workers.
+	flag.IntVar(&WorkerCount, "w", 20, "Number of concurrent workers")
+	flag.IntVar(&WorkerCount, "workers", 20, "Number of concurrent workers")
 	flag.Parse()
 }
 
@@ -178,6 +186,12 @@ func initializeConfig() Config {
 		SearchTags:        []string{"TODO", "FIXME", "HACK", "BUG", "SUGGESTION", "IDEA", "REWORK"},
 		IgnoreFolders:     []string{"Intermediate", "ThirdParty", ".git", "Binaries", "Saved", "Plugins"},
 		AllowedExtensions: []string{".h", ".cpp", ".html", ".go", ".java", ".py", ".ini", ".cs"},
+		WorkerCount:       WorkerCount,
+	}
+
+	// Update WorkerCount if it's less than 1
+	if config.WorkerCount < 1 {
+		config.WorkerCount = 1
 	}
 
 	// Append custom tags if provided via CLI
@@ -351,7 +365,7 @@ func discoverFiles(searchDir string, config Config) ([]string, error) {
 // Returns:
 //   - []Finding: A slice of all findings discovered across all scanned files.
 func startWorkerPool(filesToScan []string, config Config) []Finding {
-	const numWorkers = 20
+	numWorkers := config.WorkerCount
 	totalFiles := len(filesToScan)
 
 	// Create channels for job distribution and result collection
