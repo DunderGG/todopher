@@ -74,6 +74,8 @@ var (
 	JsonPath string
 	// CsvPath is the destination for the CSV export
 	CsvPath string
+	// MdPath is the destination for the Markdown export
+	MdPath string
 	// WorkerCount is the number of concurrent worker goroutines
 	WorkerCount int
 )
@@ -152,6 +154,7 @@ func parseFlags() {
 		fmt.Println("  -h, --help           Show this help message")
 		fmt.Println("  -i, --ignore string  Comma-separated list of additional folders to ignore")
 		fmt.Println("  -j, --json string    Optional path to export findings as a JSON file")
+		fmt.Println("  -m, --md string      Optional path to export findings as a Markdown file")
 		fmt.Println("  -o, --output string  Output filename for the report (default \"report.html\")")
 		fmt.Println("  -q, --quiet          Quiet mode (suppress output)")
 		fmt.Println("  -t, --tags string    Comma-separated list of additional search tags")
@@ -187,6 +190,9 @@ func parseFlags() {
 	// The -c or --csv flag allows the user to specify a path for a CSV export of the findings.
 	flag.StringVar(&CsvPath, "c", "", "Optional path to export findings as a CSV file")
 	flag.StringVar(&CsvPath, "csv", "", "Optional path to export findings as a CSV file")
+	// The -m or --md flag allows the user to specify a path for a Markdown export of the findings.
+	flag.StringVar(&MdPath, "m", "", "Optional path to export findings as a Markdown file")
+	flag.StringVar(&MdPath, "md", "", "Optional path to export findings as a Markdown file")
 	// The -w or --workers flag allows the user to customize the number of concurrent scanning workers.
 	flag.IntVar(&WorkerCount, "w", 20, "Number of concurrent workers")
 	flag.IntVar(&WorkerCount, "workers", 20, "Number of concurrent workers")
@@ -290,6 +296,11 @@ func generateReports(findings []Finding, config Config) {
 		exportToCsv(findings)
 	}
 
+	// Export to Markdown if requested
+	if MdPath != "" {
+		exportToMarkdown(findings)
+	}
+
 	if absPath, err := filepath.Abs(OutputPath); err == nil {
 		if !IsQuiet {
 			fmt.Printf("📊 Report generated successfully at:\n %s\n", absPath)
@@ -322,6 +333,54 @@ func exportToJson(findings []Finding) {
 			fmt.Printf("📄 JSON data exported to:\n %s\n", absJson)
 		} else {
 			fmt.Printf("📄 JSON data exported to:\n %s\n", JsonPath)
+		}
+	}
+}
+
+// exportToMarkdown serializes the findings into a clean Markdown table.
+//
+// Parameters:
+//   - findings: A slice of Finding structs to be exported.
+func exportToMarkdown(findings []Finding) {
+	file, err := os.Create(MdPath)
+	if err != nil {
+		fmt.Printf("Error creating Markdown file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	var builder strings.Builder
+	builder.WriteString("# ToDopher Audit Report\n\n")
+	builder.WriteString(fmt.Sprintf("Total Issues Found: **%d**\n\n", len(findings)))
+
+	if len(findings) > 0 {
+		builder.WriteString("| File | Line | Tag | Author | Content | Date | Status |\n")
+		builder.WriteString("| --- | --- | --- | --- | --- | --- | --- |\n")
+
+		for _, finding := range findings {
+			// Clean content to avoid breaking markdown tables
+			content := strings.ReplaceAll(finding.Content, "|", "\\|")
+			content = strings.ReplaceAll(content, "\n", " ")
+
+			row := fmt.Sprintf("| %s | %d | **%s** | %s | %s | %s | %s |\n",
+				finding.File, finding.Line, finding.Tag, finding.Author, content, finding.When, finding.Status)
+			builder.WriteString(row)
+		}
+	} else {
+		builder.WriteString("*No issues found.*\n")
+	}
+
+	_, err = file.WriteString(builder.String())
+	if err != nil {
+		fmt.Printf("Error writing Markdown file: %v\n", err)
+		return
+	}
+
+	if !IsQuiet {
+		if absMd, err := filepath.Abs(MdPath); err == nil {
+			fmt.Printf("📝 Markdown data exported to:\n %s\n", absMd)
+		} else {
+			fmt.Printf("📝 Markdown data exported to:\n %s\n", MdPath)
 		}
 	}
 }

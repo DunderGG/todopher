@@ -6,10 +6,12 @@
 
 ## 🚀 Features
 
-- **Concurrent Scanning**: Uses a Goroutine worker pool to audit thousands of files in seconds.
+- **Concurrent Scanning**: Uses a tunable Goroutine worker pool to audit thousands of files in seconds.
+- **Binary File Safety**: Robustly detects and skips binary files (like `.uasset` or `.exe`) to prevent scanning junk data.
 - **Smart Filtering**: Automatically ignores common "noise" directories like `Intermediate/`, `Binaries/`, and `.git/`.
 - **Regex Extraction**: Captures not just the comment, but the line number and the optional **author** (e.g., `TODO-Dunder: fix this`).
-- **Interactive Report**: Generates a standalone, dark-mode-first HTML report powered by DataTables for instant filtering and sorting.
+- **Interactive Report**: Generates a standalone, dark-mode-first HTML report with a **Configuration Info Tray** for full audit transparency.
+- **Multi-Format Export**: Export results to **CSV**, **JSON**, or clean **Markdown** tables for documentation.
 - **UE-Ready**: Pre-configured with filters for header files, source code, and configuration files common in Unreal Engine.
 
 ## 📦 Getting Started
@@ -46,6 +48,7 @@ Run ToDopher from the command line, providing an optional path to scan.
 | `--help`, `-h` | Show help message and usage examples. |
 | `--ignore`, `-i` | Comma-separated list of additional folders to ignore (e.g., `node_modules,build`). |
 | `--json`, `-j` | Optional path to export findings as a machine-readable JSON file. |
+| `--md`, `-m` | Optional path to export findings as a clean Markdown table (perfect for GitHub/Notion). |
 | `--output`, `-o` | Custom **file path** for the generated HTML report (defaults to `report.html`). Supports absolute or relative paths. |
 | `--quiet`, `-q` | Quiet mode. Suppresses the ASCII intro, progress bar, and status messages. Useful for CI/CD. |
 | `--tags`, `-t` | Comma-separated list of additional tags to search for (e.g., `IMPORTANT,SECURITY`). |
