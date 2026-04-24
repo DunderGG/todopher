@@ -1,24 +1,8 @@
-// ToDopher is a lightning-fast source code auditor that extracts "TODO",
-// "FIXME", and "HACK" comments from your Unreal Engine project.
+// ToDopher is a lightning-fast source code auditor that extracts various
+// "TODO" tags from your codebase and compiles them into a comprehensive report.
 //
 // It provides a centralized dashboard to track technical debt across multiple
 // modules, helping teams prioritize cleanup tasks without opening every file.
-//
-// Features to add:
-//   - Multi-threaded file scanning using a Goroutine worker pool.
-//   - Support for multiple comment styles (//, /* */, # for Python/Config).
-//   - Customizable search tags (e.g., "TODO", "TODO-Dunder", "SUGGESTION", "IDEA").
-//   - Web-based dashboard to filter TODOs by priority, file, or author.
-//   - Integration with Git to show "Who" added the TODO and "When" (git blame).
-//   - Exporting of "Debt Reports" in Markdown for project management.
-//
-// Common Pitfalls:
-//   - Encoding Errors: Large projects may contain non-UTF8 files; handle decoding gracefully.
-//   - Binary Files: Accidentally scanning a .uasset or .exe will produce garbage; use extension filters.
-//   - Performance: Iterating through tens of thousands of files in "Intermediate/" or "Plugins/".
-//   - Context: Capturing only the TODO line isn't enough; capture 2-3 lines of surrounding code.
-//
-// Note: This tool works best when integrated into a pre-commit or CI/CD workflow.
 package main
 
 import (
@@ -37,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -61,9 +46,7 @@ var (
 	// OutputPath is the destination for the HTML report
 	OutputPath string
 	// BinarySkipCount tracks how many files were identified as binary and skipped
-	BinarySkipCount int
-	// BinarySkipMutex ensures thread-safe updates to BinarySkipCount
-	BinarySkipMutex sync.Mutex
+	BinarySkipCount atomic.Int32
 	// CustomTags is a comma-separated list of search tags
 	CustomTags string
 	// CustomExtensions is a comma-separated list of file extensions
@@ -133,8 +116,9 @@ func main() {
 
 	if !IsQuiet {
 		fmt.Printf("\nAudit complete! Total findings across all files: %d\n", len(findings))
-		if BinarySkipCount > 0 {
-			fmt.Printf("⚠️  Skipped %d binary/non-UTF8 files.\n", BinarySkipCount)
+		skipCount := BinarySkipCount.Load()
+		if skipCount > 0 {
+			fmt.Printf("⚠️  Skipped %d binary/non-UTF8 files.\n", skipCount)
 		}
 	}
 
@@ -609,9 +593,7 @@ func scanFile(filePath string, regex *regexp.Regexp) []Finding {
 		return nil
 	}
 	if isBinary {
-		BinarySkipMutex.Lock()
-		BinarySkipCount++
-		BinarySkipMutex.Unlock()
+		BinarySkipCount.Add(1)
 		return nil
 	}
 
@@ -698,10 +680,16 @@ func scanFile(filePath string, regex *regexp.Regexp) []Finding {
 //   - bool: True if the file appears to be binary, false if it appears to be text.
 //   - error: Any error encountered during reading or seeking.
 func isBinaryFile(file *os.File) (bool, error) {
+	// Reset file pointer to the beginning to ensure we read from the start
+	_, err := file.Seek(0, 0)
+	if err != nil {
+		return false, err
+	}
+
 	// Read the first 8KB to check for binary content
 	buffer := make([]byte, 8192)
 	numBytesRead, err := file.Read(buffer)
-	if err != nil && err.Error() != "EOF" {
+	if err != nil && err != io.EOF {
 		return false, err
 	}
 
