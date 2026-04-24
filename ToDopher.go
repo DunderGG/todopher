@@ -28,6 +28,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -59,6 +60,10 @@ var (
 	IsQuiet bool
 	// OutputPath is the destination for the HTML report
 	OutputPath string
+	// BinarySkipCount tracks how many files were identified as binary and skipped
+	BinarySkipCount int
+	// BinarySkipMutex ensures thread-safe updates to BinarySkipCount
+	BinarySkipMutex sync.Mutex
 	// CustomTags is a comma-separated list of search tags
 	CustomTags string
 	// CustomExtensions is a comma-separated list of file extensions
@@ -126,6 +131,9 @@ func main() {
 
 	if !IsQuiet {
 		fmt.Printf("\nAudit complete! Total findings across all files: %d\n", len(findings))
+		if BinarySkipCount > 0 {
+			fmt.Printf("⚠️  Skipped %d binary/non-UTF8 files.\n", BinarySkipCount)
+		}
 	}
 
 	generateReports(findings, config)
@@ -519,6 +527,7 @@ func shouldScan(path string, config Config) bool {
 
 // scanFile reads a file and identifies lines containing technical debt tags.
 // It also captures 3 lines of following context for each finding.
+// It skips binary files by checking for null bytes in the first 8KB of content.
 //
 // Parameters:
 //   - filePath: The path of the file to scan.
@@ -527,7 +536,27 @@ func shouldScan(path string, config Config) bool {
 // Returns:
 //   - []Finding: A slice of Finding structs discovered in this file.
 func scanFile(filePath string, regex *regexp.Regexp) []Finding {
-	content, err := os.ReadFile(filePath)
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Printf("Error opening file %s: %v\n", filePath, err)
+		return nil
+	}
+	defer file.Close()
+
+	// Check if the file is binary before processing
+	isBinary, err := isBinaryFile(file)
+	if err != nil {
+		fmt.Printf("Error checking if file is binary %s: %v\n", filePath, err)
+		return nil
+	}
+	if isBinary {
+		BinarySkipMutex.Lock()
+		BinarySkipCount++
+		BinarySkipMutex.Unlock()
+		return nil
+	}
+
+	content, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Printf("Error reading file %s: %v\n", filePath, err)
 		return nil
@@ -590,6 +619,48 @@ func scanFile(filePath string, regex *regexp.Regexp) []Finding {
 		}
 	}
 	return findings
+}
+
+// isBinaryFile determines if a file is binary by checking for null bytes (\0) in the first 8KB of content.
+//
+// Background Logic:
+// In standard text encoding (UTF-8, ASCII), the null byte is almost never used. Text files use ranges
+// like 32-126 for letters/numbers and a few control characters like 10 (newline) or 13 (carriage return).
+// Binary files (images, executables, compiled assets), however, use the full range of 0-255.
+// A null byte in a binary file is extremely common, often used as padding or for "zeroing out" empty data.
+//
+// This function performs a "peek" by reading just the first 8KB. If a null byte is found, it's identified
+// as binary. If not, the file pointer is reset (seeked) back to the start so it can be processed as text.
+//
+// Parameters:
+//   - file: An open *os.File pointer.
+//
+// Returns:
+//   - bool: True if the file appears to be binary, false if it appears to be text.
+//   - error: Any error encountered during reading or seeking.
+func isBinaryFile(file *os.File) (bool, error) {
+	// Read the first 8KB to check for binary content
+	buffer := make([]byte, 8192)
+	numBytesRead, err := file.Read(buffer)
+	if err != nil && err.Error() != "EOF" {
+		return false, err
+	}
+
+	// Check for null bytes which usually indicate binary files
+	for i := 0; i < numBytesRead; i++ {
+		if buffer[i] == 0 {
+			// Found a null byte, assume it's binary
+			return true, nil
+		}
+	}
+
+	// Reset file pointer to read the full content later
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
 // gitBlame uses the 'git log' command to find the very first person who introduced

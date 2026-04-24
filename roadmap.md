@@ -13,8 +13,8 @@ This document outlines planned improvements and new features for the ToDopher te
 | ✅ Done | Author attribution | Parses inline author names from tagged comments. |
 | ✅ Done | Staleness classification | Classifies findings as `Fresh`, `Stale`, or `Ancient` based on git history. |
 | ✅ Done | Surrounding context | Captures adjacent lines around each finding for better readability. |
-| 🔲 Todo | Non-UTF8 file handling | Gracefully skip or flag files with invalid encodings instead of crashing or producing garbage output. |
-| 🔲 Todo | Binary file detection | Detect and skip binary files (`.uasset`, `.exe`, `.pak`, etc.) before reading content. |
+| ✅ Done | Non-UTF8 file handling | Gracefully skip or flag files with invalid encodings instead of crashing or producing garbage output. |
+| ✅ Done | Binary file detection | Detect and skip binary files (`.uasset`, `.exe`, `.pak`, etc.) before reading content. |
 | ✅ Done | Configurable worker count | Expose `--workers` flag so users can tune concurrency for their machine (e.g., `--workers 40`). |
 | 🔲 Todo | Symlink handling | Add a flag to control whether symbolic links are followed during directory traversal. |
 
